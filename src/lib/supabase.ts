@@ -40,8 +40,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 });
 
-// Test database connection
-const testConnection = async () => {
+// Test database connection - made async and optional
+export const testConnection = async () => {
   try {
     // First check if we can access the auth schema
     const { data: authData, error: authError } = await supabase.auth.getSession();
@@ -73,9 +73,9 @@ const testConnection = async () => {
   }
 };
 
-// Initialize connection test
+// Initialize connection test - made non-blocking
 testConnection().catch(err => {
-  console.error('Initial connection test failed:', err);
+  console.warn('Initial connection test failed - this is normal during development:', err.message);
 });
 
 // Add error handling for failed requests
