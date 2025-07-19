@@ -44,13 +44,6 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       set({ error: null });
 
-      // Test database connection before attempting sign in
-      try {
-        await testConnection();
-      } catch (err) {
-        throw new Error('Database configuration error. Please ensure you are connected to Supabase by clicking the "Connect to Supabase" button in the top right corner.');
-      }
-
       // First attempt to sign in
       const { data: authData, error: authError } = await retryOperation(async () => 
         await supabase.auth.signInWithPassword({
@@ -60,6 +53,12 @@ export const useAuthStore = create<AuthState>((set) => ({
       );
 
       if (authError) {
+        // Handle CORS/network errors gracefully
+        if (authError.message.includes('Failed to fetch') || authError.message.includes('fetch')) {
+          throw new Error('Unable to connect to the server. Please check your internet connection and try again. If the problem persists, CORS may need to be configured in your Supabase project settings.');
+        }
+        
+        // Handle other auth errors
         if (authError.message.includes('Database error querying schema')) {
           throw new Error('Database configuration error. Please ensure you are connected to Supabase by clicking the "Connect to Supabase" button in the top right corner.');
         }
@@ -80,6 +79,12 @@ export const useAuthStore = create<AuthState>((set) => ({
       );
 
       if (profileError) {
+        // Handle CORS/network errors gracefully
+        if (profileError.message.includes('Failed to fetch') || profileError.message.includes('fetch')) {
+          throw new Error('Unable to connect to the server. Please check your internet connection and try again. If the problem persists, CORS may need to be configured in your Supabase project settings.');
+        }
+        
+        // Handle other profile errors
         if (profileError.message.includes('Database error querying schema')) {
           throw new Error('Database configuration error. Please ensure you are connected to Supabase by clicking the "Connect to Supabase" button in the top right corner.');
         }
@@ -105,6 +110,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       let errorMessage = 'An unexpected error occurred. Please try again.';
       
       if (err.message?.includes('Database error querying schema') || 
+          err.message?.includes('Unable to connect to the server')) {
+        errorMessage = err.message;
+      } else if (err.message?.includes('Database error querying schema') || 
           err.message?.includes('Database configuration error')) {
         errorMessage = 'Database configuration error. Please ensure you are connected to Supabase by clicking the "Connect to Supabase" button in the top right corner.';
       } else if (err.message?.includes('Invalid login credentials')) {
